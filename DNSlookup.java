@@ -2,15 +2,6 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.Random;
 
-/**
- * 
- */
-
-/**
- * @author Donald Acton
- * This example is adapted from Kurose & Ross
- * Feel free to modify and rearrange code as you see fit
- */
 public class DNSlookup {
     static final int MIN_PERMITTED_ARGUMENT_COUNT = 2;
     static final int MAX_PERMITTED_ARGUMENT_COUNT = 3;
@@ -32,7 +23,8 @@ public class DNSlookup {
             rootNameServer = InetAddress.getByName(args[0]);
             fqdn = args[1];
 
-            if (argCount == 3) {  // option provided
+            if (argCount == 3) {  
+                // option provided
                 if (args[2].equals("-t")) {
                     tracingOn = true;
                 } else if (args[2].equals("-6")) {
@@ -40,7 +32,8 @@ public class DNSlookup {
                 } else if (args[2].equals("-t6")) {
                     tracingOn = true;
                     IPV6Query = true;
-                } else { // option present but wasn't valid option
+                } else { 
+                    // option present but wasn't valid option
                     usage();
                     return;
                 }
@@ -48,13 +41,11 @@ public class DNSlookup {
 
             DNSResponse fqdnResponse = getAuthRecordForDomainName(fqdn, IPV6Query, rootNameServer, tracingOn, false);
             int rCode = fqdnResponse.getrCode();
-            // No error case
+          
             if (rCode == 0) {
                 ResponseRecord[] answers = fqdnResponse.getAnswerRecords();
                 if (answers != null) {
-                    // Case where it directly resolves fqdn IP address immediately
                     if (fqdn.equals(answers[0].name)) {
-                        // Print all the answer records
                         for (ResponseRecord rr : answers) {
                             System.out.println(fqdn + " " + rr.timeToLive + "   " +
                                     rr.type + " " + rr.rdData);
@@ -102,6 +93,7 @@ public class DNSlookup {
     public static DNSResponse getAuthRecordForDomainName(String fqdn, boolean isIPV6, InetAddress nameServer,
                                                          boolean tracingOn, boolean isNameServer) throws
             DNSLookupsExceededException, DNSTimeoutException {
+        
         try {
             if (queryCount >= 30) throw new DNSLookupsExceededException(queryCount);
             socket = new DatagramSocket();
@@ -111,13 +103,12 @@ public class DNSlookup {
             DNSQuery queryObject = new DNSQuery(fqdn, currIPV6, nameServer);
             DatagramPacket queryPacket = queryObject.getDNSQueryPacket();
             socket.send(queryPacket);
-            // increment the number of total queries sent
+           
             queryCount++;
-            // Get response from DNS server
+            
             byte[] buf = new byte[1024];
             DatagramPacket responsePacket = new DatagramPacket(buf, buf.length);
-            socket.receive(responsePacket); // throws socketTimeOutException
-            //construct new response
+            socket.receive(responsePacket);
             DNSResponse response = new DNSResponse(responsePacket.getData(), responsePacket.getLength());
 
             if (tracingOn) {
@@ -138,7 +129,7 @@ public class DNSlookup {
                     return cnResponse;
                 }
             } else {
-                // !Authoritative case, gotta keep querying
+                // !Authoritative case, keep querying
                 if (response.getAdditionalCount() > 0) {
                     // Knows the IP address of the next name server
                     ResponseRecord[] additionalInfo = response.getAdditionalInfoRecords();
@@ -156,18 +147,30 @@ public class DNSlookup {
                     }
 
                     if (ipFound) {
-                        DNSResponse nsResponse = getAuthRecordForDomainName(fqdn, isIPV6, nextServerIP, tracingOn, resolveIsNameServer(fqdn));
+                        DNSResponse nsResponse = getAuthRecordForDomainName(fqdn, 
+                                                                            isIPV6, 
+                                                                            nextServerIP, 
+                                                                            tracingOn, 
+                                                                            resolveIsNameServer(fqdn));
                         return nsResponse;
                     }
                     else {
-                        DNSResponse nsResponse = getAuthRecordForDomainName(nameToSearch, isIPV6, nextServerIP, tracingOn, resolveIsNameServer(fqdn));
+                        DNSResponse nsResponse = getAuthRecordForDomainName(nameToSearch, 
+                                                                            isIPV6, 
+                                                                            nextServerIP, 
+                                                                            tracingOn, 
+                                                                            resolveIsNameServer(fqdn));
                     }
                 }
-                // empty additional section, gotta resolve for NS IP address
+                // empty Additional Section, resolve for NS IP address
                 else {
                     ResponseRecord[] nameServers = response.getNSRecords();
                     String nsDomainName = nameServers[0].rdData;
-                    DNSResponse nsDMResponse = getAuthRecordForDomainName(nsDomainName, isIPV6, rootNameServer, tracingOn, resolveIsNameServer(fqdn));
+                    DNSResponse nsDMResponse = getAuthRecordForDomainName(nsDomainName,
+                                                                          isIPV6, 
+                                                                          rootNameServer, 
+                                                                          tracingOn, 
+                                                                          resolveIsNameServer(fqdn));
                     return nsDMResponse;
                 }
             }
